@@ -986,3 +986,105 @@ button:disabled {
 .galeria-grade button:hover:not(:disabled) {
   background: #f5bd00;
 }
+
+/* ===== Mais largura: campo de link, resultado e carrossel ===== */
+.hero-inner {
+  max-width: 940px; /* campo de link mais largo (antes 760px) */
+}
+
+.conteudo {
+  max-width: 1200px; /* área de conteúdo (antes 1080px) */
+}
+
+/* Resultado de vídeo: um pouco mais largo */
+.conteudo > .resultado {
+  max-width: 940px;
+}
+
+/* Resultado de carrossel: usa toda a largura disponível */
+.conteudo > .resultado.modo-galeria {
+  max-width: none;
+}
+
+/* Cards do carrossel maiores */
+.galeria-grade {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 18px;
+}
+
+/* A legenda não estica demais, para continuar fácil de ler */
+.modo-galeria .bloco-descricao {
+  max-width: 80ch;
+}
+
+/* O losango amarelo acompanha a largura nova */
+.hero::before {
+  width: min(1700px, 175vw);
+}
+
+/* Celular: 2 cards por linha no carrossel */
+@media (max-width: 640px) {
+  .galeria-grade {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+/* ===== Barra de carregamento ===== */
+/* A barra aparece sozinha quando algum botão está "ocupado" (desativado).
+   O :has() significa "quando houver, aqui dentro, um botão desativado". */
+
+@keyframes carregando {
+  from {
+    background-position: -70% 0;
+  }
+  to {
+    background-position: 170% 0;
+  }
+}
+
+.busca:has(.btn-buscar:disabled)::after,
+.acoes:has(button:disabled)::after,
+.galeria:has(button:disabled) .galeria-topo::after {
+  content: "";
+  flex: 1 1 100%; /* ocupa a linha inteira */
+  height: 6px;
+  border-radius: 999px;
+  /* trilho claro com um trecho verde que corre da esquerda para a direita */
+  background: var(--fundo)
+    linear-gradient(90deg, transparent, var(--verde), transparent) no-repeat;
+  background-size: 40% 100%;
+  animation: carregando 1.1s linear infinite;
+}
+
+/* No campo de link: a barra fica entre os botões e o aviso legal */
+.busca::after {
+  order: 1;
+  margin: 2px 8px;
+}
+
+.busca .aviso {
+  order: 2;
+}
+
+/* Para quem desativou animações no sistema: barra parada e cheia */
+@media (prefers-reduced-motion: reduce) {
+  .busca:has(.btn-buscar:disabled)::after,
+  .acoes:has(button:disabled)::after,
+  .galeria:has(button:disabled) .galeria-topo::after {
+    animation: none;
+    background: var(--verde);
+  }
+}
+
+/* ===== Carrossel: 3 cards por linha ===== */
+.galeria-grade {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Celular: continua com 2 por linha, para os cards não ficarem minúsculos */
+@media (max-width: 640px) {
+  .galeria-grade {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
