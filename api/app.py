@@ -1,7 +1,11 @@
+import re
+import shutil
+import tempfile
+from pathlib import Path
 from urllib.parse import urlparse
 
 import yt_dlp
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -78,6 +82,70 @@ def info():
         qualities=qualities,
     )
 
+def safe_name(title: str) -> str:
+    """Limpa o título para virar um nome de arquivo válido."""
+    name = re.sub(r'[\\/*?:"<>|\n\r]', "", title).strip()
+    return name[:80] or "arquivo"  # no máximo 80 letras
+
+
+@app.get("/download")
+def download():
+    """Baixa o vídeo (mp4) ou só o áudio (mp3) e envia o arquivo."""
+    url = (request.args.get("url") or "").strip()
+    kind = request.args.get("format", "mp4")    # mp4 ou mp3
+    quality = request.args.get("quality", "")   # ex.: 720
+
+    if not detect_platform(url):
+        return jsonify(error="Link inválido ou rede não suportada."), 400
+    if kind not in ("mp4", "mp3"):
+        return jsonify(error="Formato deve ser mp4 ou mp3."), 400
+
+    # Pasta temporária só para este download (apagada no final)
+    tmp = tempfile.mkdtemp(prefix="bd_")
+
+    options = {
+        "quiet": True,
+        "noplaylist": True,
+        "outtmpl": f"{tmp}/%(id)s.%(ext)s",  # onde salvar o arquivo
+    }
+
+    if kind == "mp3":
+        # pega o melhor áudio e o ffmpeg converte para mp3
+        options["format"] = "bestaudio/best"
+        options["postprocessors"] = [{
+            "key": "FFmpegExtractAudio",
+            "preferredcodec": "mp3",
+            "preferredquality": "192",  # kbps
+        }]
+    else:
+        # se não informar qualidade, usa até 1080p
+        h = int(quality) if quality.isdigit() else 1080
+        # tenta mp4 pronto; se não tiver, pega o melhor disponível
+        options["format"] = (
+            f"bv*[height<={h}][ext=mp4]+ba[ext=m4a]/"
+            f"b[height<={h}][ext=mp4]/"
+            f"bv*[height<={h}]+ba/b[height<={h}]/b"
+        )
+        options["merge_output_format"] = "mp4"  # ffmpeg junta vídeo+áudio
+
+    try:
+        with yt_dlp.YoutubeDL(options) as ydl:
+            data = ydl.extract_info(url, download=True)
+    except yt_dlp.utils.DownloadError:
+        shutil.rmtree(tmp, ignore_errors=True)
+        return jsonify(error="Não consegui baixar esse link."), 422
+
+    files = list(Path(tmp).iterdir())
+    if not files:
+        shutil.rmtree(tmp, ignore_errors=True)
+        return jsonify(error="Arquivo não foi gerado."), 500
+
+    filename = f"{safe_name(data.get('title') or 'video')}.{kind}"
+    response = send_file(files[0], as_attachment=True, download_name=filename)
+
+    # depois de enviar, apaga a pasta temporária para não encher o disco
+    response.call_on_close(lambda: shutil.rmtree(tmp, ignore_errors=True))
+    return response
 
 if __name__ == "__main__":
     app.run(port=8000, debug=True)
