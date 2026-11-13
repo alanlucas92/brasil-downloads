@@ -1,0 +1,16 @@
+services:
+  api:
+    build: ./api                      # usa o Dockerfile da pasta api
+    container_name: brasil-downloads-api
+    restart: unless-stopped           # volta sozinho se a VPS reiniciar
+    env_file:
+      - ./api/.env                    # e-mail do formulário (arquivo secreto)
+    volumes:
+      # cookies ficam fora da imagem e entram por aqui
+      - ./api/cookies-instagram.txt:/app/cookies-instagram.txt
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.brasildl.rule=Host(`brasildl.srv1540317.hstgr.cloud`)"
+      - "traefik.http.routers.brasildl.entrypoints=websecure"
+      - "traefik.http.routers.brasildl.tls.certresolver=letsencrypt"
+      - "traefik.http.services.brasildl.loadbalancer.server.port=8000"
