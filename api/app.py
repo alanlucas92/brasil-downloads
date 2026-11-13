@@ -1,3 +1,4 @@
+import io
 import re
 import shutil
 import tempfile
@@ -8,30 +9,15 @@ import yt_dlp
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 
+from contact import contact_bp                  # formulário de contato
+from gallery import gallery_bp, list_media      # fotos e carrossel
+from platforms import detect_platform           # lista de redes aceitas
+
 app = Flask(__name__)
 CORS(app)  # permite que o site (outro endereço) chame esta API
-
-# Só aceitamos links destes domínios. Isso evita que usem
-# nossa API para acessar qualquer endereço da internet.
-ALLOWED = {
-    "youtube.com": "youtube",
-    "youtu.be": "youtube",
-    "instagram.com": "instagram",
-    "tiktok.com": "tiktok",
-    "facebook.com": "facebook",
-    "fb.watch": "facebook",
-    "linkedin.com": "linkedin",
-}
-
-
-def detect_platform(url: str):
-    """Descobre de qual rede é o link. Retorna None se não for suportada."""
-    host = (urlparse(url).hostname or "").lower()
-    for domain, name in ALLOWED.items():
-        # aceita "instagram.com" e também "www.instagram.com"
-        if host == domain or host.endswith("." + domain):
-            return name
-    return None
+app.config["MAX_CONTENT_LENGTH"] = 3 * 1024 * 1024  # recusa envios acima de 3 MB
+app.register_blueprint(contact_bp)
+app.register_blueprint(gallery_bp)
 
 
 @app.get("/health")
@@ -42,7 +28,7 @@ def health():
 
 @app.route("/info", methods=["GET", "POST"])
 def info():
-    """Recebe um link e devolve os dados do vídeo, sem baixar."""
+    """Recebe um link e devolve os dados do post, sem baixar."""
     body = request.get_json(silent=True) or {}
     # aceita o link pelo corpo (POST) ou pela URL (?url=...), útil para testar
     url = (body.get("url") or request.args.get("url") or "").strip()
@@ -51,17 +37,37 @@ def info():
     if not platform:
         return jsonify(error="Link inválido ou rede não suportada."), 400
 
-    options = {
-        "quiet": True,          # não polui o terminal
-        "skip_download": True,  # só lê as informações
-        "noplaylist": True,     # ignora playlists inteiras
-    }
+    # Posts do Instagram com /p/ costumam ser foto ou carrossel:
+    # nesses, pulamos o yt-dlp e vamos direto ao gallery-dl.
+    gallery_first = platform == "instagram" and "/p/" in url
 
-    try:
-        with yt_dlp.YoutubeDL(options) as ydl:
-            data = ydl.extract_info(url, download=False)
-    except yt_dlp.utils.DownloadError:
-        return jsonify(error="Não consegui ler esse link. Ele é público?"), 422
+    data = None
+    if not gallery_first:
+        options = {
+            "quiet": True,          # não polui o terminal
+            "skip_download": True,  # só lê as informações
+            "noplaylist": True,     # ignora playlists inteiras
+        }
+        try:
+            with yt_dlp.YoutubeDL(options) as ydl:
+                data = ydl.extract_info(url, download=False)
+        except yt_dlp.utils.DownloadError:
+            data = None  # o yt-dlp não leu: tentamos o gallery-dl abaixo
+
+    # Sem vídeo? Tenta ler como foto/carrossel.
+    if data is None or not data.get("formats"):
+        gallery = list_media(url, platform)
+        if gallery:
+            return jsonify(
+                platform=platform,
+                kind="gallery",   # avisa o site que é foto/carrossel
+                title=None,
+                duration=None,
+                qualities=[],
+                **gallery["info"],
+            )
+        if data is None:
+            return jsonify(error="Não consegui ler esse link. Ele é público?"), 422
 
     # Monta a lista de qualidades (ex.: 1080, 720, 480) sem repetir
     qualities = sorted(
@@ -75,12 +81,19 @@ def info():
 
     return jsonify(
         platform=platform,
+        kind="video",
+        items=[],
         title=data.get("title"),
         description=data.get("description"),  # legenda; None se não houver
         thumbnail=data.get("thumbnail"),      # capa do vídeo
         duration=data.get("duration"),        # em segundos
         qualities=qualities,
+        author=data.get("channel") or data.get("uploader"),  # quem postou
+        likes=data.get("like_count"),         # curtidas (pode vir None)
+        comments=data.get("comment_count"),   # nº de comentários (pode vir None)
+        date=data.get("upload_date"),         # data no formato AAAAMMDD
     )
+
 
 def safe_name(title: str) -> str:
     """Limpa o título para virar um nome de arquivo válido."""
@@ -107,6 +120,7 @@ def download():
         "quiet": True,
         "noplaylist": True,
         "outtmpl": f"{tmp}/%(id)s.%(ext)s",  # onde salvar o arquivo
+        "concurrent_fragment_downloads": 4,  # baixa 4 pedaços ao mesmo tempo
     }
 
     if kind == "mp3":
@@ -146,6 +160,41 @@ def download():
     # depois de enviar, apaga a pasta temporária para não encher o disco
     response.call_on_close(lambda: shutil.rmtree(tmp, ignore_errors=True))
     return response
+
+
+@app.get("/thumbnail")
+def thumbnail():
+    """Baixa a capa do post e envia como arquivo de imagem."""
+    url = (request.args.get("url") or "").strip()
+    if not detect_platform(url):
+        return jsonify(error="Link inválido ou rede não suportada."), 400
+
+    options = {"quiet": True, "skip_download": True, "noplaylist": True}
+
+    try:
+        with yt_dlp.YoutubeDL(options) as ydl:
+            data = ydl.extract_info(url, download=False)
+            thumb_url = data.get("thumbnail")
+            if not thumb_url:
+                return jsonify(error="Esse post não tem capa."), 404
+            # o próprio yt-dlp busca a imagem (ele sabe passar pelos bloqueios)
+            image = ydl.urlopen(thumb_url).read()
+    except Exception:
+        return jsonify(error="Não consegui baixar a capa."), 422
+
+    # descobre a extensão pelo endereço da imagem; se não achar, usa jpg
+    ext = Path(urlparse(thumb_url).path).suffix.lstrip(".").lower()
+    if ext not in ("jpg", "jpeg", "png", "webp"):
+        ext = "jpg"
+    mime = "image/jpeg" if ext in ("jpg", "jpeg") else f"image/{ext}"
+
+    return send_file(
+        io.BytesIO(image),  # envia direto da memória, sem salvar em disco
+        mimetype=mime,
+        as_attachment=True,
+        download_name=f"capa.{ext}",
+    )
+
 
 if __name__ == "__main__":
     app.run(port=8000, debug=True)

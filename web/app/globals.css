@@ -1,0 +1,988 @@
+/* ===== Cores e medidas do projeto (mude aqui e muda no site todo) ===== */
+:root {
+  --verde: #0a6b3c;
+  --verde-escuro: #064a29;
+  --amarelo: #ffcb1f;
+  --azul: #1b3fa0;
+  --tinta: #0e2018; /* cor do texto */
+  --papel: #ffffff; /* fundo dos cartões */
+  --fundo: #eff5f0; /* fundo da página */
+  --linha: #d5e2d9; /* bordas */
+  --erro: #b42318;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body), system-ui, sans-serif;
+  color: var(--tinta);
+  background: var(--fundo);
+  line-height: 1.5;
+}
+
+h1,
+h2 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+/* Contorno azul visível para quem navega pelo teclado */
+:focus-visible {
+  outline: 3px solid var(--azul);
+  outline-offset: 2px;
+}
+
+/* Texto que só leitores de tela enxergam */
+.so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* ===== Topo verde ===== */
+.hero {
+  position: relative;
+  overflow: hidden; /* corta o losango que passa da borda */
+  background: var(--verde);
+  color: #fff;
+  padding: 24px 20px 150px;
+  text-align: center;
+}
+
+/* O losango amarelo da bandeira, atrás do campo de link */
+.hero::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  transform: translateX(-50%);
+  width: min(1250px, 175vw);
+  aspect-ratio: 2.2 / 1;
+  background: var(--amarelo);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.hero-inner {
+  position: relative; /* fica na frente do losango */
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 56px;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.marca-losango {
+  width: 16px;
+  height: 16px;
+  background: var(--amarelo);
+  transform: rotate(45deg);
+}
+
+.hero h1 {
+  font-size: clamp(2.5rem, 8vw, 4.75rem);
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+}
+
+.sub {
+  max-width: 34rem;
+  margin: 20px auto 36px;
+  font-size: 1.1rem;
+  color: #dff0e5;
+}
+
+/* ===== Campo de link ===== */
+.busca {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  background: var(--papel);
+  border-radius: 20px;
+  box-shadow: 0 18px 40px -18px rgba(6, 74, 41, 0.75);
+}
+
+.busca input {
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--tinta);
+  font-size: 1.05rem;
+}
+
+.btn-colar {
+  padding: 0 16px;
+  min-height: 52px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--fundo);
+  color: var(--verde-escuro);
+  font-weight: 600;
+}
+
+.btn-buscar {
+  flex: 1 0 auto;
+  min-height: 52px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--verde-escuro);
+  color: #fff;
+  font-weight: 700;
+}
+
+.btn-buscar:hover:not(:disabled) {
+  background: var(--tinta);
+}
+
+.erro {
+  margin: 14px 0 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--papel);
+  color: var(--erro);
+  font-weight: 600;
+  text-align: left;
+}
+
+/* ===== Conteúdo abaixo do topo ===== */
+.conteudo {
+  position: relative;
+  max-width: 800px;
+  margin: -96px auto 0; /* sobe o cartão para cima do losango */
+  padding: 0 20px 48px;
+}
+
+.cartao {
+  padding: 28px;
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: 24px;
+}
+
+.cartao h2 {
+  font-size: 1.5rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.passos {
+  margin: 16px 0 0;
+  padding-left: 1.3rem;
+  display: grid;
+  gap: 10px;
+}
+
+.passos li::marker {
+  font-weight: 700;
+  color: var(--verde);
+}
+
+/* ===== Resultado ===== */
+.resultado {
+  display: grid;
+  grid-template-columns: 210px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.capa {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 14px;
+  background: var(--fundo);
+}
+
+.detalhes {
+  min-width: 0; /* deixa textos longos quebrarem em vez de estourar */
+}
+
+.origem {
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: var(--verde);
+}
+
+.descricao {
+  margin: 10px 0 0;
+  color: #3d5247;
+  white-space: pre-line; /* respeita as quebras de linha da legenda */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4; /* mostra no máximo 4 linhas */
+  -webkit-box-orient: vertical;
+}
+
+.qualidades {
+  margin-top: 22px;
+}
+
+.qualidades p {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.qualidades div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 8px 14px;
+  border: 1.5px solid var(--linha);
+  border-radius: 999px;
+  background: var(--papel);
+  color: var(--tinta);
+  font-weight: 600;
+}
+
+/* Qualidade selecionada */
+.chip[aria-pressed="true"] {
+  border-color: var(--azul);
+  background: var(--azul);
+  color: #fff;
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.btn-video,
+.btn-mp3 {
+  flex: 1 1 180px;
+  min-height: 54px;
+  padding: 0 20px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.btn-video {
+  border: 0;
+  background: var(--amarelo);
+  color: var(--tinta);
+}
+
+.btn-video:hover:not(:disabled) {
+  background: #f5bd00;
+}
+
+.btn-mp3 {
+  border: 2px solid var(--azul);
+  background: var(--papel);
+  color: var(--azul);
+}
+
+.btn-mp3:hover:not(:disabled) {
+  background: #eef2fc;
+}
+
+.rodape {
+  margin-top: 28px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #4d6357;
+}
+
+/* ===== Celular ===== */
+@media (max-width: 640px) {
+  .hero {
+    padding-bottom: 130px;
+  }
+
+  .marca {
+    margin-bottom: 40px;
+  }
+
+  .resultado {
+    grid-template-columns: 1fr; /* capa em cima, detalhes embaixo */
+  }
+
+  .capa {
+    max-width: 220px;
+  }
+
+  .cartao {
+    padding: 22px;
+  }
+}
+
+/* ===== Botão de baixar a capa ===== */
+.btn-capa {
+  flex: 1 1 100%; /* ocupa a linha inteira, abaixo dos outros dois */
+  min-height: 46px;
+  border: 1.5px solid var(--linha);
+  border-radius: 14px;
+  background: var(--papel);
+  color: var(--tinta);
+  font-weight: 600;
+}
+
+.btn-capa:hover:not(:disabled) {
+  background: var(--fundo);
+}
+
+/* ===== Etapa 4: faixa das redes, números e legenda ===== */
+.sub {
+  margin-bottom: 20px;
+}
+
+.redes {
+  display: flex;
+  flex-wrap: wrap; /* no celular quebra em mais de uma linha */
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 28px;
+  padding: 0;
+  list-style: none;
+}
+
+.redes li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--verde-escuro);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Rede detectada pelo link colado */
+.redes li.ativa {
+  background: var(--papel);
+  color: var(--tinta);
+}
+
+.redes img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.numeros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.92rem;
+  color: #4d6357;
+}
+
+.bloco-descricao {
+  margin-top: 18px;
+}
+
+.rotulo {
+  margin: 0 0 4px;
+  font-weight: 700;
+}
+
+.bloco-descricao .descricao {
+  margin-top: 0;
+  overflow-wrap: anywhere; /* links longos não estouram a tela */
+}
+
+/* Legenda aberta: mostra o texto inteiro */
+.descricao.aberta {
+  display: block;
+  -webkit-line-clamp: unset;
+}
+
+.ver-tudo {
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--azul);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* ===== Aviso legal dentro do campo de link ===== */
+.aviso {
+  flex: 1 1 100%; /* ocupa a linha inteira, abaixo dos botões */
+  margin: 0;
+  padding: 2px 10px 6px;
+  font-size: 0.85rem;
+  color: #4d6357;
+  text-align: left;
+}
+
+.aviso a,
+.onde a,
+.legal a {
+  color: var(--azul);
+  font-weight: 600;
+}
+
+/* ===== Seções da página inicial ===== */
+.conteudo > .secao:first-child {
+  margin-top: 0;
+  padding: 28px;
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: 24px;
+}
+
+.secao {
+  margin-top: 52px;
+}
+
+.secao h2 {
+  font-size: 1.6rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin-bottom: 16px;
+}
+
+/* Como baixar: três linhas separadas por um traço fino */
+.onde {
+  margin: 0;
+}
+
+.onde > div {
+  padding: 14px 0;
+  border-top: 1px solid var(--linha);
+}
+
+.onde dt {
+  font-weight: 700;
+}
+
+.onde dd {
+  margin: 4px 0 0;
+  color: #3d5247;
+}
+
+/* Por que usar: lista com um losango amarelo no lugar da bolinha */
+.motivos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+
+.motivos li {
+  position: relative;
+  padding-left: 26px;
+}
+
+.motivos li::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0.5em;
+  width: 10px;
+  height: 10px;
+  background: var(--amarelo);
+  transform: rotate(45deg);
+}
+
+/* Perguntas frequentes: abre e fecha ao clicar */
+.faq {
+  border-top: 1px solid var(--linha);
+}
+
+.faq summary {
+  padding: 14px 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.faq p {
+  margin: 0 0 16px;
+  color: #3d5247;
+}
+
+/* Rodapé */
+.rodape {
+  margin-top: 52px;
+  padding-top: 20px;
+  border-top: 1px solid var(--linha);
+}
+
+.rodape nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 24px;
+}
+
+.rodape a {
+  color: var(--verde-escuro);
+  font-weight: 600;
+}
+
+/* ===== Páginas de Termos e Privacidade ===== */
+.legal-topo {
+  background: var(--verde);
+  padding: 20px;
+}
+
+.legal-topo .marca {
+  max-width: 760px;
+  margin: 0 auto;
+  color: #fff;
+  text-decoration: none;
+}
+
+.legal {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 28px 20px 48px;
+}
+
+.legal h1 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(1.8rem, 5vw, 2.4rem);
+  line-height: 1.1;
+  margin: 0 0 8px;
+}
+
+.legal h2 {
+  font-size: 1.15rem;
+  margin: 26px 0 6px;
+}
+
+.legal p {
+  margin: 0 0 10px;
+}
+
+/* ===== Formulário de contato ===== */
+.form-contato {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.form-contato label {
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+.form-contato input,
+.form-contato select,
+.form-contato textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--linha);
+  border-radius: 12px;
+  background: var(--papel);
+  color: var(--tinta);
+  font: inherit;
+}
+
+.form-contato textarea {
+  resize: vertical; /* só deixa aumentar para baixo */
+}
+
+.form-contato .erro {
+  border: 1.5px solid var(--erro);
+}
+
+.form-contato .btn-buscar {
+  margin-top: 18px;
+}
+
+.enviado {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #dff0e5;
+  color: var(--verde-escuro);
+  font-weight: 600;
+}
+
+/* ===== Como baixar: guias com passos e fotos ===== */
+.secao.como {
+  padding: 28px;
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: 24px;
+}
+
+.guia {
+  margin-top: 36px;
+}
+
+.secao.como h2 + .guia {
+  margin-top: 4px;
+}
+
+/* Etiqueta verde com o nome do guia (No celular, No computador...) */
+.guia h3 {
+  display: inline-block;
+  margin: 0 0 16px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: var(--verde);
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.guia-passos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 passos lado a lado */
+  gap: 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Espaço da foto de cada passo */
+.foto {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid var(--linha);
+  border-radius: 14px;
+  background: var(--fundo);
+}
+
+/* Texto que aparece enquanto a foto não foi enviada */
+.foto::before {
+  content: "Imagem do passo";
+  font-size: 0.85rem;
+  color: #6b8074;
+}
+
+.foto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* preenche o quadro sem distorcer */
+}
+
+.passo-titulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 4px;
+  font-weight: 700;
+}
+
+/* Bolinha amarela com o número do passo */
+.passo-titulo span {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--amarelo);
+  font-size: 0.9rem;
+}
+
+.guia-passos li > p:last-child {
+  margin: 0;
+  color: #3d5247;
+}
+
+.guia-link {
+  display: inline-block;
+  margin-top: 18px;
+  color: var(--azul);
+  font-weight: 700;
+}
+
+/* ===== Por que usar: grade de cards ===== */
+.motivos-grade {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.motivos-grade li {
+  padding: 20px;
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: 18px;
+  color: #3d5247;
+}
+
+.motivos-grade strong {
+  position: relative;
+  display: block;
+  margin-bottom: 6px;
+  padding-left: 22px;
+  color: var(--tinta);
+}
+
+/* Losango amarelo antes do título de cada card */
+.motivos-grade strong::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.4em;
+  width: 10px;
+  height: 10px;
+  background: var(--amarelo);
+  transform: rotate(45deg);
+}
+
+/* ===== Celular: tudo em uma coluna ===== */
+@media (max-width: 640px) {
+  .secao.como {
+    padding: 22px;
+  }
+
+  .guia-passos,
+  .motivos-grade {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Ícones nos cards de "Por que usar" ===== */
+.motivos-grade li {
+  position: relative; /* o ícone se posiciona em relação ao card */
+}
+
+/* Quadradinho verde-claro atrás do ícone */
+.motivos-grade li::before {
+  content: "";
+  display: block;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: #dff0e5;
+}
+
+.motivos-grade strong {
+  position: static;
+  padding-left: 0; /* tira o espaço do losango antigo */
+}
+
+/* O ícone: o desenho vem da variável --icone de cada card */
+.motivos-grade strong::before {
+  left: 30px;
+  top: 30px;
+  width: 24px;
+  height: 24px;
+  transform: none;
+  background: var(--verde-escuro); /* cor do ícone */
+  -webkit-mask: var(--icone) center / contain no-repeat;
+  mask: var(--icone) center / contain no-repeat;
+}
+
+/* 1. Sem anúncios */
+.motivos-grade li:nth-child(1) {
+  --icone: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M5.6 5.6l12.8 12.8'/></svg>");
+}
+
+/* 2. Sem cadastro */
+.motivos-grade li:nth-child(2) {
+  --icone: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='9' cy='8' r='4'/><path d='M2 21v-1a7 7 0 0 1 14 0v1'/><path d='M17 8l5 5M22 8l-5 5'/></svg>");
+}
+
+/* 3. Vídeo, MP3 e capa */
+.motivos-grade li:nth-child(3) {
+  --icone: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='5' width='18' height='14' rx='3'/><path d='M10 9l5 3-5 3z'/></svg>");
+}
+
+/* 4. Você escolhe a qualidade */
+.motivos-grade li:nth-child(4) {
+  --icone: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 7h10M18 7h2M4 17h2M10 17h10'/><circle cx='16' cy='7' r='2'/><circle cx='8' cy='17' r='2'/></svg>");
+}
+
+/* 5. No celular e no computador */
+.motivos-grade li:nth-child(5) {
+  --icone: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='4' width='14' height='10' rx='2'/><path d='M6 18h6M9 14v4'/><rect x='17' y='9' width='5' height='11' rx='1.5'/></svg>");
+}
+
+/* 6. Nada fica guardado */
+.motivos-grade li:nth-child(6) {
+  --icone: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5'/></svg>");
+}
+
+
+/* ===== Cards maiores: área de conteúdo mais larga ===== */
+.conteudo {
+  max-width: 1080px; /* antes era 800px */
+}
+
+/* O cartão do resultado continua mais estreito e centralizado */
+.conteudo > .resultado {
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.guia-passos {
+  gap: 24px;
+}
+
+.passo-titulo {
+  font-size: 1.1rem;
+}
+
+.motivos-grade {
+  gap: 18px;
+}
+
+.motivos-grade li {
+  padding: 24px;
+}
+
+.motivos-grade strong {
+  font-size: 1.05rem;
+}
+
+/* Reposiciona o ícone por causa do espaço interno maior */
+.motivos-grade strong::before {
+  left: 34px;
+  top: 34px;
+}
+
+/* Perguntas: limita a largura do texto para não ficar cansativo de ler */
+.faq p {
+  max-width: 70ch;
+}
+
+/* Só em telas grandes: mais respiro dentro do quadro "Como baixar" */
+@media (min-width: 641px) {
+  .secao.como {
+    padding: 36px;
+  }
+}
+
+/* Tablets: "Por que usar" em 2 colunas para os cards não espremerem */
+@media (min-width: 641px) and (max-width: 900px) {
+  .motivos-grade {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ===== Carrossel e fotos: um card para cada arquivo ===== */
+.resultado.modo-galeria {
+  grid-template-columns: 1fr; /* sem a coluna da capa grande */
+}
+
+.galeria {
+  margin-top: 24px;
+}
+
+.galeria-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.galeria-topo p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.btn-todos {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 2px solid var(--azul);
+  border-radius: 12px;
+  background: var(--papel);
+  color: var(--azul);
+  font-weight: 700;
+}
+
+.btn-todos:hover:not(:disabled) {
+  background: #eef2fc;
+}
+
+/* A grade se ajusta sozinha: mais colunas na tela grande, 2 no celular */
+.galeria-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.galeria-grade li {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--linha);
+  border-radius: 16px;
+  background: var(--papel);
+}
+
+/* Prévia do card: mostra "Foto 1" até a imagem carregar */
+.galeria-previa {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 5;
+  background: var(--fundo);
+  color: #6b8074;
+  font-size: 0.85rem;
+}
+
+.galeria-previa img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galeria-grade button {
+  margin: 10px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--amarelo);
+  color: var(--tinta);
+  font-weight: 700;
+}
+
+.galeria-grade button:hover:not(:disabled) {
+  background: #f5bd00;
+}

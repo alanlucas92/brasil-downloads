@@ -1,0 +1,8 @@
+3. 💻 PC — as fotos, quando tiver: crie a pasta web/public/passos/ e suba com estes nomes. Elas aparecem sozinhas, sem mexer no código.
+
+Guia	Arquivos
+No celular	celular-1.png, celular-2.png, celular-3.png
+No computador	pc-1.png, pc-2.png, pc-3.png
+Extensão	extensao-1.png, extensao-2.png, extensao-3.png
+
+Tamanho recomendado: 800 x 600 (proporção 4:3).
