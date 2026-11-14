@@ -5,3 +5,4 @@ python-dotenv
 gallery-dl
 requests
 gunicorn
+flask-limiter

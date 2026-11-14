@@ -13,11 +13,41 @@ from contact import contact_bp                  # formulário de contato
 from gallery import gallery_bp, list_media      # fotos e carrossel
 from platforms import detect_platform           # lista de redes aceitas
 
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+# Sites que podem chamar esta API pelo navegador
+ORIGINS = [
+    "https://brasil-downloads.vercel.app",  # o site no ar
+    "http://localhost:3000",                # o site no seu PC
+]
+
 app = Flask(__name__)
-CORS(app)  # permite que o site (outro endereço) chame esta API
+CORS(app, origins=ORIGINS)  # bloqueia chamadas vindas de outros sites
 app.config["MAX_CONTENT_LENGTH"] = 3 * 1024 * 1024  # recusa envios acima de 3 MB
+
+# Na VPS os pedidos passam pelo Traefik. Esta linha faz a API enxergar
+# o IP real de cada visitante, e não o IP do Traefik.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
+
+# Limite de uso por visitante (por IP)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["60 per minute", "600 per day"],
+    storage_uri="memory://",
+)
+
 app.register_blueprint(contact_bp)
 app.register_blueprint(gallery_bp)
+limiter.limit("5 per hour")(contact_bp)  # formulário de contato: bem mais restrito
+
+
+@app.errorhandler(429)
+def too_many(_error):
+    """Resposta quando o visitante passa do limite."""
+    return jsonify(error="Muitos pedidos em pouco tempo. Aguarde um minuto e tente de novo."), 429
 
 
 @app.get("/health")
