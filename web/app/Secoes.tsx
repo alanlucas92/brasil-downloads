@@ -16,17 +16,17 @@ const GUIAS = [
     link: { href: APP_URL, texto: "Baixar o aplicativo na Play Store" },
     passos: [
       {
-        foto: "/passos/celular-1.png",
+        foto: "/passos/celular-1.svg",
         titulo: "Encontre o post",
         texto: "Abra o aplicativo da rede social e vá até o vídeo ou a foto que você quer salvar.",
       },
       {
-        foto: "/passos/celular-2.png",
+        foto: "/passos/celular-2.svg",
         titulo: "Copie o link",
         texto: "Toque em Compartilhar e escolha Copiar link.",
       },
       {
-        foto: "/passos/celular-3.png",
+        foto: "/passos/celular-3.svg",
         titulo: "Cole e baixe",
         texto: "Abra o Brasil Downloads, cole o link e escolha vídeo, MP3 ou capa.",
       },
@@ -37,17 +37,17 @@ const GUIAS = [
     link: { href: "", texto: "" },
     passos: [
       {
-        foto: "/passos/pc-1.png",
+        foto: "/passos/pc-1.svg",
         titulo: "Abra o post",
         texto: "Entre na rede social pelo navegador e abra a publicação que você quer salvar.",
       },
       {
-        foto: "/passos/pc-2.png",
+        foto: "/passos/pc-2.svg",
         titulo: "Copie o endereço",
         texto: "Selecione o endereço na barra do navegador e copie com Ctrl+C.",
       },
       {
-        foto: "/passos/pc-3.png",
+        foto: "/passos/pc-3.svg",
         titulo: "Cole e baixe",
         texto: "Cole no campo no topo desta página. A busca começa sozinha e você escolhe o que baixar.",
       },
@@ -58,17 +58,17 @@ const GUIAS = [
     link: { href: EXTENSAO_URL, texto: "Abrir a página da extensão" },
     passos: [
       {
-        foto: "/passos/extensao-1.png",
+        foto: "/passos/extensao-1.svg",
         titulo: "Abra a página da extensão",
         texto: "Acesse a página do Brasil Downloads na Chrome Web Store.",
       },
       {
-        foto: "/passos/extensao-2.png",
+        foto: "/passos/extensao-2.svg",
         titulo: "Adicione ao Chrome",
         texto: "Clique em Usar no Chrome e confirme em Adicionar extensão.",
       },
       {
-        foto: "/passos/extensao-3.png",
+        foto: "/passos/extensao-3.svg",
         titulo: "Fixe e use",
         texto: "Clique no ícone de quebra-cabeça, fixe o Brasil Downloads e use o botão com o post aberto.",
       },
