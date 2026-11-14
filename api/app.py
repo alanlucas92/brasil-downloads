@@ -41,6 +41,8 @@ limiter = Limiter(
 
 app.register_blueprint(contact_bp)
 app.register_blueprint(gallery_bp)
+from stats import init_stats  # estatísticas de download (arquivo stats.py)
+init_stats(app)
 limiter.limit("5 per hour")(contact_bp)  # formulário de contato: bem mais restrito
 
 
