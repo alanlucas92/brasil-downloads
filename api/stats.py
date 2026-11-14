@@ -13,6 +13,18 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
 
+def detect_device(user_agent: str) -> str:
+    """Classifica o aparelho pelo texto que o navegador envia.
+    Guardamos só a categoria, nunca o texto completo."""
+    ua = (user_agent or "").lower()
+    # tablets: iPad, ou Android sem a palavra "mobile"
+    if "ipad" in ua or "tablet" in ua or ("android" in ua and "mobi" not in ua):
+        return "tablet"
+    if "mobi" in ua or "iphone" in ua:
+        return "celular"
+    return "computador"
+
+
 def _send(row: dict):
     """Grava uma linha na tabela 'downloads'. Se falhar, ignora em silêncio."""
     try:
@@ -30,11 +42,11 @@ def _send(row: dict):
         pass  # estatística nunca pode derrubar um download
 
 
-def record(platform: str, kind: str, ok: bool):
+def record(platform: str, kind: str, ok: bool, device: str):
     """Anota um download em segundo plano, sem atrasar a resposta."""
     if not (SUPABASE_URL and SUPABASE_KEY):
         return  # sem configuração: simplesmente não anota
-    row = {"platform": platform, "kind": kind, "ok": ok}
+    row = {"platform": platform, "kind": kind, "ok": ok, "device": device}
     threading.Thread(target=_send, args=(row,), daemon=True).start()
 
 
@@ -62,5 +74,6 @@ def init_stats(app):
         if kind and response.status_code != 429:
             platform = detect_platform(request.args.get("url", ""))
             if platform:
-                record(platform, kind, response.status_code < 400)
+                device = detect_device(request.headers.get("User-Agent", ""))
+                record(platform, kind, response.status_code < 400, device)
         return response
