@@ -1088,3 +1088,8 @@ button:disabled {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ===== Esconde o botão "Baixar todos" ===== */
+.btn-todos {
+  display: none;
+}
