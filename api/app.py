@@ -58,6 +58,18 @@ def health():
     return jsonify(status="ok")
 
 
+def gallery_response(platform: str, gallery: dict):
+    """Resposta padrão para foto/carrossel."""
+    return jsonify(
+        platform=platform,
+        kind="gallery",   # avisa o site que é foto/carrossel
+        title=None,
+        duration=None,
+        qualities=[],
+        **gallery["info"],
+    )
+
+
 @app.route("/info", methods=["GET", "POST"])
 def info():
     """Recebe um link e devolve os dados do post, sem baixar."""
@@ -69,37 +81,33 @@ def info():
     if not platform:
         return jsonify(error="Link inválido ou rede não suportada."), 400
 
-    # Posts do Instagram com /p/ costumam ser foto ou carrossel:
-    # nesses, pulamos o yt-dlp e vamos direto ao gallery-dl.
-    gallery_first = platform == "instagram" and "/p/" in url
+    # Links /p/ do Instagram podem ser foto, carrossel OU vídeo.
+    # Primeiro listamos com o gallery-dl para descobrir o que é.
+    if platform == "instagram" and "/p/" in url:
+        gallery = list_media(url, platform)
+        items = gallery["info"]["items"] if gallery else []
+        single_video = len(items) == 1 and items[0]["type"] == "video"
+        if gallery and not single_video:
+            return gallery_response(platform, gallery)
+        # É um vídeo único: segue para o yt-dlp, que dá qualidade, MP3 e capa
 
-    data = None
-    if not gallery_first:
-        options = {
-            "quiet": True,          # não polui o terminal
-            "skip_download": True,  # só lê as informações
-            "noplaylist": True,     # ignora playlists inteiras
-        }
-        try:
-            with yt_dlp.YoutubeDL(options) as ydl:
-                data = ydl.extract_info(url, download=False)
-        except yt_dlp.utils.DownloadError:
-            data = None  # o yt-dlp não leu: tentamos o gallery-dl abaixo
+    options = {
+        "quiet": True,          # não polui o terminal
+        "skip_download": True,  # só lê as informações
+        "noplaylist": True,     # ignora playlists inteiras
+    }
+    try:
+        with yt_dlp.YoutubeDL(options) as ydl:
+            data = ydl.extract_info(url, download=False)
+    except yt_dlp.utils.DownloadError:
+        data = None  # o yt-dlp não leu: tentamos o gallery-dl abaixo
 
-    # Sem vídeo? Tenta ler como foto/carrossel.
+    # Sem vídeo? Tenta ler como foto/carrossel (se já buscamos, vem da memória).
     if data is None or not data.get("formats"):
         gallery = list_media(url, platform)
         if gallery:
-            return jsonify(
-                platform=platform,
-                kind="gallery",   # avisa o site que é foto/carrossel
-                title=None,
-                duration=None,
-                qualities=[],
-                **gallery["info"],
-            )
-        if data is None:
-            return jsonify(error="Não consegui ler esse link. Ele é público?"), 422
+            return gallery_response(platform, gallery)
+        return jsonify(error="Não consegui ler esse link. Ele é público?"), 422
 
     # Monta a lista de qualidades (ex.: 1080, 720, 480) sem repetir
     qualities = sorted(

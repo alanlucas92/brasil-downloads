@@ -1,12 +1,13 @@
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
-import requests
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
 
 from platforms import detect_platform
 
@@ -16,24 +17,27 @@ BASE = Path(__file__).parent        # pasta api/
 VIDEO_EXT = {"mp4", "webm", "mov", "m4v"}
 IMAGE_EXT = {"jpg", "jpeg", "png", "webp", "heic"}
 MAX_ITEMS = 20                      # no máximo 20 cards por link
-CACHE_SECONDS = 600                 # guarda o resultado por 10 minutos
+CACHE_SECONDS = 600                 # guarda a lista por 10 minutos
 _cache = {}                         # memória: link -> (hora, resultado)
 
 
+def gallery_cmd(platform: str, *args: str) -> list:
+    """Monta o comando do gallery-dl, já com os cookies da rede, se existirem."""
+    cmd = [sys.executable, "-m", "gallery_dl", *args]
+    cookies = BASE / f"cookies-{platform}.txt"  # ex.: cookies-instagram.txt
+    if cookies.exists():
+        cmd += ["--cookies", str(cookies)]
+    return cmd
+
+
 def list_media(url: str, platform: str):
-    """Usa o gallery-dl para listar fotos/vídeos de um post.
-    Retorna {"info": dados para o site, "files": endereços reais} ou None."""
+    """Usa o gallery-dl para LISTAR fotos/vídeos de um post (sem baixar).
+    Retorna {"info": dados para o site} ou None."""
     cached = _cache.get(url)
     if cached and time.time() - cached[0] < CACHE_SECONDS:
         return cached[1]  # já buscamos esse link há pouco: reaproveita
 
-    # Monta o comando: o mesmo que você rodou no terminal, com -j (só listar)
-    cmd = [sys.executable, "-m", "gallery_dl", "-j", "--range", f"1-{MAX_ITEMS}"]
-    cookies = BASE / f"cookies-{platform}.txt"  # ex.: cookies-instagram.txt
-    if cookies.exists():
-        cmd += ["--cookies", str(cookies)]
-    cmd.append(url)
-
+    cmd = gallery_cmd(platform, "-j", "--range", f"1-{MAX_ITEMS}") + [url]
     try:
         out = subprocess.run(
             cmd, capture_output=True, text=True,
@@ -43,9 +47,8 @@ def list_media(url: str, platform: str):
     except (subprocess.TimeoutExpired, json.JSONDecodeError):
         return None
 
-    files = []   # endereços reais (ficam só no servidor)
-    items = []   # o que o site recebe
-    meta = {}    # dados do post (autor, legenda...)
+    items = []  # o que o site recebe
+    meta = {}   # dados do post (autor, legenda...)
     for entry in entries:
         if entry[0] == -1:  # o gallery-dl avisou um erro
             print("gallery-dl:", entry[1].get("message"))
@@ -62,7 +65,6 @@ def list_media(url: str, platform: str):
         if not meta:
             meta = data
         preview = data.get("display_url") or (file_url if kind == "image" else None)
-        files.append({"url": file_url, "ext": ext})
         items.append({"index": len(items), "type": kind, "ext": ext, "preview": preview})
 
     if not items:
@@ -80,7 +82,6 @@ def list_media(url: str, platform: str):
             "thumbnail": items[0]["preview"],
             "items": items,
         },
-        "files": files,
     }
     _cache[url] = (time.time(), result)
     return result
@@ -88,34 +89,43 @@ def list_media(url: str, platform: str):
 
 @gallery_bp.get("/media")
 def media():
-    """Baixa UM card do post. Ex.: /media?url=LINK&index=0 (0 = primeiro)."""
+    """Baixa UM card do post. Ex.: /media?url=LINK&index=0 (0 = primeiro).
+    Quem baixa é o próprio gallery-dl, que sabe passar pelos bloqueios das redes."""
     url = (request.args.get("url") or "").strip()
     platform = detect_platform(url)
     if not platform:
         return jsonify(error="Link inválido ou rede não suportada."), 400
 
     index = request.args.get("index", "0")
-    data = list_media(url, platform)
-    if not data or not index.isdigit() or int(index) >= len(data["files"]):
+    if not index.isdigit():
         return jsonify(error="Arquivo não encontrado nesse post."), 404
-    file = data["files"][int(index)]
+    number = int(index) + 1  # o gallery-dl conta a partir de 1
+
+    # Pasta temporária só para este arquivo (apagada no final)
+    tmp = tempfile.mkdtemp(prefix="bdm_")
+    cmd = gallery_cmd(platform, "--range", str(number), "-D", tmp) + [url]
 
     try:
-        # stream=True: vai repassando o arquivo aos poucos, sem encher a memória
-        remote = requests.get(
-            file["url"], stream=True, timeout=30,
-            headers={"User-Agent": "Mozilla/5.0"},
+        out = subprocess.run(
+            cmd, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=180,
         )
-        remote.raise_for_status()
-    except requests.RequestException:
+    except subprocess.TimeoutExpired:
+        shutil.rmtree(tmp, ignore_errors=True)
+        return jsonify(error="O download demorou demais. Tente de novo."), 504
+
+    # Ignora arquivos incompletos (.part) que possam ter sobrado
+    files = [f for f in Path(tmp).iterdir() if f.is_file() and f.suffix != ".part"]
+    if not files:
+        print("gallery-dl (media):", out.stderr[-500:])  # aparece no log da API
+        shutil.rmtree(tmp, ignore_errors=True)
         return jsonify(error="Não consegui baixar esse arquivo."), 502
 
-    name = f"brasil-downloads-{int(index) + 1}.{file['ext']}"
-    headers = {"Content-Disposition": f'attachment; filename="{name}"'}
-    if remote.headers.get("Content-Length"):
-        headers["Content-Length"] = remote.headers["Content-Length"]
-    return Response(
-        remote.iter_content(64 * 1024),
-        mimetype=remote.headers.get("Content-Type", "application/octet-stream"),
-        headers=headers,
+    file = files[0]
+    ext = file.suffix.lstrip(".").lower() or "bin"
+    response = send_file(
+        file, as_attachment=True, download_name=f"brasil-downloads-{number}.{ext}"
     )
+    # depois de enviar, apaga a pasta temporária para não encher o disco
+    response.call_on_close(lambda: shutil.rmtree(tmp, ignore_errors=True))
+    return response
