@@ -1098,3 +1098,19 @@ button:disabled {
 .rodape a[href="/contato"] {
   display: none;
 }
+
+/* ===== Botão "Instalar o app" ===== */
+.btn-instalar {
+  margin-top: 16px;
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--verde-escuro);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 10px 24px -12px rgba(6, 74, 41, 0.8);
+}
+
+.btn-instalar:hover {
+  background: var(--tinta);
+}

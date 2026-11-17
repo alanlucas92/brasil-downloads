@@ -1,7 +1,8 @@
 "use client"; // esta página usa estado e cliques, então roda no navegador
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import InstalarApp from "./InstalarApp";
 import Galeria, { type Item } from "./Galeria";
 import Secoes from "./Secoes";
 
@@ -175,6 +176,21 @@ export default function Home() {
     }
   }
 
+  // Link compartilhado pelo celular (Compartilhar → Brasil Downloads),
+  // ou aberto como brasil-downloads.vercel.app/?url=LINK: busca sozinho.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    // o Instagram costuma mandar o link dentro do texto, então procuramos nos três campos
+    const texto = [params.get("url"), params.get("text"), params.get("title")].join(" ");
+    const link = texto.match(/https?:\/\/\S+/)?.[0];
+    if (link) {
+      setUrl(link);
+      search(link);
+      window.history.replaceState(null, "", "/"); // limpa o endereço da barra
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // É foto/carrossel? Então a tela mostra os cards em vez dos botões de vídeo
   const isGallery = (info?.items.length ?? 0) > 0;
 
@@ -254,6 +270,8 @@ export default function Home() {
               <Link href="/privacidade">Política de privacidade</Link>.
             </p>
           </form>
+
+          <InstalarApp />
 
           {error && (
             <p className="erro" role="alert">
