@@ -1093,3 +1093,8 @@ button:disabled {
 .btn-todos {
   display: none;
 }
+
+/* Formulário em standby: esconde o link "Contato" do rodapé */
+.rodape a[href="/contato"] {
+  display: none;
+}

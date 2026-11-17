@@ -30,7 +30,7 @@ export default function Privacidade() {
       <h2>4. Estatísticas</h2>
       <p>
         Podemos registrar contagens anônimas de uso, como a rede social, o
-        tipo de arquivo e a data do download. Essas contagens não identificam
+        tipo de arquivo, o tipo de aparelho (celular, tablet ou computador) e a data do download. Essas contagens não identificam
         você.
       </p>
 

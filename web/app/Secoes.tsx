@@ -7,6 +7,9 @@ import Link from "next/link";
 const APP_URL = "";
 const EXTENSAO_URL = "";
 
+// Extensão em standby: troque para true quando ela for publicada
+const MOSTRAR_EXTENSAO = false;
+
 // GUIAS "Como baixar".
 // FOTOS: suba as imagens em web/public/passos/ com os nomes indicados em "foto".
 // Tamanho recomendado: 800 x 600 (proporção 4:3), em PNG ou JPG.
@@ -112,7 +115,7 @@ const FAQ = [
   },
   {
     q: "Quais redes funcionam?",
-    a: "No site: Instagram, TikTok, Facebook, LinkedIn e YouTube. No aplicativo e na extensão: Instagram, TikTok, Facebook e LinkedIn.",
+    a: "Instagram, TikTok, Facebook, LinkedIn e YouTube.",
   },
   {
     q: "Posso escolher a resolução do vídeo?",
@@ -146,7 +149,7 @@ export default function Secoes() {
       <section className="secao como">
         <h2>Como baixar</h2>
 
-        {GUIAS.map((guia) => (
+        {GUIAS.filter((guia) => MOSTRAR_EXTENSAO || !guia.titulo.includes("extensão")).map((guia) => (
           <div className="guia" key={guia.titulo}>
             <h3>{guia.titulo}</h3>
             <ol className="guia-passos">
