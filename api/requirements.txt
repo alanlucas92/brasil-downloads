@@ -6,3 +6,4 @@ gallery-dl
 requests
 gunicorn
 flask-limiter
+maxminddb

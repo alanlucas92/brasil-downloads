@@ -8,6 +8,7 @@ services:
     volumes:
       # cookies ficam fora da imagem e entram por aqui
       - ./api/cookies-instagram.txt:/app/cookies-instagram.txt
+      - ./geo:/app/geo:ro  # base de localização por IP (só leitura)
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.brasildl.rule=Host(`brasildl.srv1540317.hstgr.cloud`)"

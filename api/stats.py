@@ -1,6 +1,8 @@
 import os
 import threading
+from pathlib import Path
 
+import maxminddb
 import requests
 from dotenv import load_dotenv
 from flask import request
@@ -11,6 +13,33 @@ load_dotenv()  # lê SUPABASE_URL e SUPABASE_KEY do arquivo api/.env
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
+
+# Base de localização por IP (DB-IP City Lite), guardada no próprio servidor.
+# Sem o arquivo (como no seu PC), as estatísticas seguem normais, só sem cidade.
+GEO_FILE = Path(__file__).parent / "geo" / "dbip-city-lite.mmdb"
+try:
+    _geo = maxminddb.open_database(str(GEO_FILE))
+except Exception:
+    _geo = None
+
+
+def _name(obj) -> str | None:
+    """Pega o nome em português, se existir; senão, em inglês."""
+    names = (obj or {}).get("names", {})
+    return names.get("pt-BR") or names.get("en")
+
+
+def detect_location(ip: str):
+    """Descobre cidade, estado e país aproximados. O IP NÃO é guardado."""
+    if not _geo or not ip:
+        return None, None, None
+    try:
+        data = _geo.get(ip) or {}
+    except Exception:
+        return None, None, None  # IP inválido ou interno (ex.: 127.0.0.1)
+    region = (data.get("subdivisions") or [{}])[0]
+    country = (data.get("country") or {}).get("iso_code")  # ex.: "BR"
+    return _name(data.get("city")), _name(region), country
 
 
 def detect_device(user_agent: str) -> str:
@@ -42,11 +71,10 @@ def _send(row: dict):
         pass  # estatística nunca pode derrubar um download
 
 
-def record(platform: str, kind: str, ok: bool, device: str):
+def record(row: dict):
     """Anota um download em segundo plano, sem atrasar a resposta."""
     if not (SUPABASE_URL and SUPABASE_KEY):
         return  # sem configuração: simplesmente não anota
-    row = {"platform": platform, "kind": kind, "ok": ok, "device": device}
     threading.Thread(target=_send, args=(row,), daemon=True).start()
 
 
@@ -74,6 +102,15 @@ def init_stats(app):
         if kind and response.status_code != 429:
             platform = detect_platform(request.args.get("url", ""))
             if platform:
-                device = detect_device(request.headers.get("User-Agent", ""))
-                record(platform, kind, response.status_code < 400, device)
+                # remote_addr já é o IP real do visitante (o ProxyFix no app.py cuida disso)
+                city, region, country = detect_location(request.remote_addr)
+                record({
+                    "platform": platform,
+                    "kind": kind,
+                    "ok": response.status_code < 400,
+                    "device": detect_device(request.headers.get("User-Agent", "")),
+                    "city": city,
+                    "region": region,
+                    "country": country,
+                })
         return response
