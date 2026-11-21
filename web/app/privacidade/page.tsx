@@ -29,9 +29,15 @@ export default function Privacidade() {
 
       <h2>4. Estatísticas</h2>
       <p>
-        Podemos registrar contagens anônimas de uso, como a rede social, o
-        tipo de arquivo, o tipo de aparelho (celular, tablet ou computador) e a data do download. Essas contagens não identificam
-        você.
+        Registramos contagens anônimas de uso: a rede social, o tipo de
+        arquivo, o tipo de aparelho (celular, tablet ou computador), a cidade
+        e o estado aproximados e a data do download. Para saber a cidade, o
+        endereço IP é consultado no próprio servidor no momento do download e
+        não é guardado. Essas contagens não identificam você.
+      </p>
+      <p>
+        Localização aproximada por{" "}
+        <a href="https://db-ip.com">IP Geolocation by DB-IP</a>.
       </p>
 
       <h2>5. Formulário de contato</h2>
