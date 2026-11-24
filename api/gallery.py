@@ -10,6 +10,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request, send_file
 
 from platforms import detect_platform
+from video import ensure_h264  # garante vídeo que abre em qualquer celular
 
 gallery_bp = Blueprint("gallery", __name__)
 
@@ -122,6 +123,8 @@ def media():
         return jsonify(error="Não consegui baixar esse arquivo."), 502
 
     file = files[0]
+    if file.suffix.lstrip(".").lower() in VIDEO_EXT:
+        file = ensure_h264(file)  # converte só se precisar
     ext = file.suffix.lstrip(".").lower() or "bin"
     response = send_file(
         file, as_attachment=True, download_name=f"brasil-downloads-{number}.{ext}"

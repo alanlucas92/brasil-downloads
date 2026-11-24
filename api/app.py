@@ -12,6 +12,7 @@ from flask_cors import CORS
 from contact import contact_bp                  # formulário de contato
 from gallery import gallery_bp, list_media      # fotos e carrossel
 from platforms import detect_platform           # lista de redes aceitas
+from video import ensure_h264                   # garante vídeo que abre em qualquer celular
 
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -174,10 +175,12 @@ def download():
     else:
         # se não informar qualidade, usa até 1080p
         h = int(quality) if quality.isdigit() else 1080
-        # tenta mp4 pronto; se não tiver, pega o melhor disponível
+        # Ordem de preferência: primeiro H.264 (avc1), que abre em qualquer
+        # celular; se não existir, aceita outro codec e convertemos depois.
         options["format"] = (
-            f"bv*[height<={h}][ext=mp4]+ba[ext=m4a]/"
-            f"b[height<={h}][ext=mp4]/"
+            f"bv*[height<={h}][vcodec^=avc1]+ba[acodec^=mp4a]/"
+            f"bv*[height<={h}][vcodec^=avc1]+ba/"
+            f"b[height<={h}][vcodec^=avc1]/"
             f"bv*[height<={h}]+ba/b[height<={h}]/b"
         )
         options["merge_output_format"] = "mp4"  # ffmpeg junta vídeo+áudio
@@ -194,8 +197,12 @@ def download():
         shutil.rmtree(tmp, ignore_errors=True)
         return jsonify(error="Arquivo não foi gerado."), 500
 
+    file = files[0]
+    if kind == "mp4":
+        file = ensure_h264(file)  # converte só se precisar
+
     filename = f"{safe_name(data.get('title') or 'video')}.{kind}"
-    response = send_file(files[0], as_attachment=True, download_name=filename)
+    response = send_file(file, as_attachment=True, download_name=filename)
 
     # depois de enviar, apaga a pasta temporária para não encher o disco
     response.call_on_close(lambda: shutil.rmtree(tmp, ignore_errors=True))
