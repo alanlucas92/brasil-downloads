@@ -1114,3 +1114,23 @@ button:disabled {
 .btn-instalar:hover {
   background: var(--tinta);
 }
+
+/* ===== Aviso durante o download ===== */
+.aviso-download {
+  flex: 1 1 100%; /* ocupa a linha inteira, abaixo dos botões */
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-left: 4px solid var(--verde);
+  border-radius: 12px;
+  background: var(--fundo);
+}
+
+.aviso-download strong {
+  color: var(--verde-escuro);
+}
+
+.aviso-download span {
+  font-size: 0.9rem;
+  color: #3d5247;
+}

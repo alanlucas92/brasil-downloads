@@ -53,6 +53,11 @@ function formatDate(d: string) {
 // Transforma 12500 em "12.500"
 const formatNumber = (n: number) => new Intl.NumberFormat("pt-BR").format(n);
 
+// "celular" ou "computador", conforme o navegador de quem está usando
+function aparelho() {
+  return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? "celular" : "computador";
+}
+
 export default function Home() {
   const [url, setUrl] = useState(""); // o que está digitado no campo
   const [current, setCurrent] = useState(""); // link do resultado na tela
@@ -62,6 +67,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState<"mp4" | "mp3" | "capa" | null>(null);
   const [error, setError] = useState("");
+  const [etapa, setEtapa] = useState(""); // mensagem do que está acontecendo no download
 
   // Rede detectada pelo link digitado (acende o ícone dela)
   const detected = NETWORKS.find((n) => n.match.some((m) => url.includes(m)))?.id;
@@ -128,27 +134,48 @@ export default function Home() {
     URL.revokeObjectURL(link.href);
   }
 
-  // Botões de vídeo e MP3: chama /download
+  // Botões de vídeo e MP3: chama /download, mostrando o que está acontecendo
   async function handleDownload(format: "mp4" | "mp3") {
     if (!info) return;
     setDownloading(format);
     setError("");
+
+    const lugar = aparelho();
+    // Enquanto o servidor trabalha, as mensagens avançam com o tempo
+    const passos =
+      format === "mp3"
+        ? ["Baixando o vídeo…", "Separando o áudio…", "Convertendo para MP3…"]
+        : ["Baixando o vídeo…", `Convertendo para o seu ${lugar}…`, "Finalizando o arquivo…"];
+    let i = 0;
+    setEtapa(passos[0]);
+    const timer = setInterval(() => {
+      i = Math.min(i + 1, passos.length - 1); // para na última mensagem
+      setEtapa(passos[i]);
+    }, 6000); // troca a cada 6 segundos
 
     try {
       const params = new URLSearchParams({ url: current, format });
       if (format === "mp4" && quality) params.set("quality", String(quality));
 
       const res = await fetch(`${API}/download?${params}`);
+      clearInterval(timer); // o servidor terminou: daqui em diante as mensagens são reais
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.error ?? "Não foi possível baixar esse arquivo.");
       }
 
-      saveFile(await res.blob(), `${(info.title ?? "video").slice(0, 80)}.${format}`);
+      setEtapa(`Enviando para o seu ${lugar}…`);
+      const blob = await res.blob(); // o arquivo chegando ao aparelho
+
+      setEtapa("Pronto! Liberando o download.");
+      saveFile(blob, `${(info.title ?? "video").slice(0, 80)}.${format}`);
     } catch (err) {
+      setEtapa("");
       showError(err);
     } finally {
+      clearInterval(timer);
       setDownloading(null);
+      setTimeout(() => setEtapa(""), 2500); // tira o aviso depois de 2,5 s
     }
   }
 
@@ -385,6 +412,16 @@ export default function Home() {
                     >
                       {downloading === "capa" ? "Preparando a capa…" : "Baixar capa"}
                     </button>
+                    {/* Aviso do que está acontecendo durante o download */}
+                    {etapa && (
+                      <div className="aviso-download" role="status" aria-live="polite">
+                        <strong>{etapa}</strong>
+                        <span>
+                          Vídeos longos podem levar alguns minutos, porque preparamos o
+                          arquivo para abrir no seu {aparelho()}. Não feche esta página.
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
